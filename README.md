@@ -61,23 +61,11 @@ Scikit-Learn
 Android Debug Bridge (ADB) - for data collection
 
 Usage
-Pre-process Data:
-
-Bash
 
 python preprocess.py
-Inject Physics Data:
-
-Bash
 
 python inject_physics.py
-Train Model:
-
-Bash
 
 python train_model.py
-Run Simulation:
-
-Bash
 
 python simulate_future.py
