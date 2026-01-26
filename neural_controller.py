@@ -12,15 +12,19 @@ ADB_OVERRIDE = None
 # Snapdragon 8s Gen 3 Frequency Map
 CLUSTERS = {
     "prime": "/sys/devices/system/cpu/cpufreq/policy7/scaling_max_freq",
-    "perf":  "/sys/devices/system/cpu/cpufreq/policy4/scaling_max_freq",
+    "perf":  "/sys/devices/system/cpu/cpufreq/policy3/scaling_max_freq",
     "eff":   "/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq"
 }
 
 GEARS = {
-    1: {"prime": 1100000, "perf": 1100000, "eff": 900000},   # Emergency (Danger)
-    2: {"prime": 1800000, "perf": 1600000, "eff": 1200000},  # Throttling (Hot)
-    3: {"prime": 2400000, "perf": 2200000, "eff": 1600000},  # Sustainable (Warm)
-    4: {"prime": 3014400, "perf": 2803200, "eff": 2016000}   # Turbo (Cool)
+    # Gear 1: Cool Down (Emergency)
+    1: {"prime": 1094400, "perf": 1056000, "eff": 902400},   
+    # Gear 2: Braking (Throttling)
+    2: {"prime": 1900800, "perf": 1708800, "eff": 1228800},  
+    # Gear 3: Sustainable Gaming (High Load)
+    3: {"prime": 2457600, "perf": 2188800, "eff": 1593600},  
+    # Gear 4: Turbo (Max Available on Neoteric)
+    4: {"prime": 2918400, "perf": 2707200, "eff": 2016000}   
 }
 
 # ==========================================
@@ -134,7 +138,7 @@ def main():
     history = []
     
     last_shift_time = 0
-    lock_duration = 60.0  # 1 Minute Lock
+    lock_duration = 60.0 
     
     print(f"\nNEURAL GOVERNOR: BATTERY EDITION | Limits: 38C / 41C / 44C")
     print("----------------------------------------------------------")
