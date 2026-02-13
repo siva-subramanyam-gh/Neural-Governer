@@ -26,3 +26,7 @@ q_table.pkl
 # --- OS Junk Files ---
 .DS_Store
 Thumbs.db
+
+# Ignore the logs (we will upload the FINAL clean data later)
+*.csv
+thermal_log.csv
