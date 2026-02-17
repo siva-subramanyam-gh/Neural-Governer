@@ -1,71 +1,47 @@
-Neural Governor
-Overview
-Neural Governor is a machine learning-based thermal management system designed for Android devices. Unlike standard Linux thermal governors which reactively throttle CPU performance after a temperature threshold is breached, this system uses a Linear Regression model to predict future device temperature based on current CPU stress and thermal velocity.
+Neural Governor: Adaptive Thermal Management via Reinforcement Learning
 
-This project demonstrates the application of regression analysis to hardware optimization, specifically addressing the latency between CPU load application and thermal sensor response.
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue)
+![Platform](https://img.shields.io/badge/Platform-Android%20(Rooted)-green)
+![Method](https://img.shields.io/badge/Method-Reinforcement%20Learning-orange)
+![Status](https://img.shields.io/badge/Status-Research%20Prototype-red)
 
-Problem Statement
-Standard thermal management relies on instantaneous sensor readings. However, heat dissipation lags behind heat generation.
+> **"Proactive Thermal Mitigation on Mobile SoCs via Predictive Neural Networks and User-Space Kernel Locking."**
 
-Challenge: Purely data-driven models often fail to learn cooling physics because high CPU load correlates with high temperature in standard logs, leading to a "positive feedback" bias where the model assumes high temperatures cause further heating.
+## 📜 Abstract
+Mobile operating systems (Android) rely on reactive thermal governors (e.g., `schedutil`, `Joyose`) that throttle CPU frequencies only *after* a thermal threshold is breached. This results in jagged performance drops and unstable frame rates during sustained loads.
 
-Solution: This project implements a hybrid approach, combining real-world device logs with synthetic data injection based on Newton's Law of Cooling to correctly train the model on thermal dissipation rates.
+**The Neural Governor** is a user-space agent that uses **Online Reinforcement Learning (Q-Learning)** to learn the specific thermal characteristics of a device. Instead of reacting to heat, it anticipates it. It enforces its decisions using a novel **Kernel Locking Mechanism (`chmod 444`)**, effectively overriding the manufacturer's restrictive throttling algorithms to maximize sustained performance within safe thermal limits.
 
-Technical Architecture
-1. Data Acquisition
-Source: Real-time polling of Android thermal zones via ADB (sys/class/thermal/thermal_zoneX).
+## 🚀 Key Features
 
-Features:
+### 1. The RL Brain (Q-Learning Agent)
+* **Algorithm:** Tabular Q-Learning (Model-Free RL).
+* **State Space:** Discretized Battery Temperature + Rate of Change.
+* **Action Space:** 4 Distinct "Gears" (Frequency/Refresh Rate Profiles).
+* **Reward Function:** A "Hysteresis" logic that heavily rewards max performance below 40°C and heavily punishes overheating above 43°C.
+* **Adaptability:** The agent learns from its mistakes. If it overheats in Gear 4, it remembers to downshift earlier next time.
 
-Stress_Score: Normalized CPU load factor.
+### 2. The Locking Mechanism (The "Novelty")
+Standard user-space tools cannot stop the Kernel from throttling. We bypass this by exploiting file permissions in the Linux sysfs interface:
+1.  **Unlock:** `chmod 644` the scaling frequency files.
+2.  **Force:** Write the target frequency to *both* `scaling_min_freq` and `scaling_max_freq`.
+3.  **Lock:** `chmod 444` the files immediately.
+* *Result:* The OS attempts to throttle but is denied write access, maintaining the high performance target.
 
-CPU_Temp: Current core temperature.
+### 3. Research Data Logger
+A lightweight, low-overhead logging tool (`logger.py`) used to generate comparative datasets (Stock vs. Neural) for academic analysis.
 
-Temp_Velocity: Rate of change in temperature (°C/second).
+### 4. Installation Procedure
+```text
 
-2. Preprocessing & Physics Injection
-Raw data often lacks "idle cooling" samples, causing model instability.
+🛠️ Installation & UsagePrerequisites:An Android Device with Root Access (Magisk/KernelSU).Termux installed.1. Setup EnvironmentOpen Termux and run:Bash# Update and install Python/Root tools
+pkg update && pkg upgrade
+pkg install python tsu
 
-Session Handling: Detects time gaps in data logging to prevent invalid velocity calculations.
-
-Physics Augmentation: Synthetic data points were injected to model cooling behavior when stress is zero, strictly following the principle that cooling rate is proportional to the temperature delta (Newton's Law of Cooling).
-
-3. Model
-Algorithm: Linear Regression (Scikit-Learn).
-
-Logic: Velocity = (w1 * Stress) + (w2 * Temp) + Bias.
-
-Outcome: The model successfully identifies a negative coefficient for temperature, indicating stable equilibrium.
-
-Project Structure
-preprocess.py: Cleans raw logs, calculates thermal velocity, and removes sensor noise.
-
-inject_physics.py: Augments the training dataset with synthetic cooling data to correct model bias.
-
-train_model.py: Trains the regression model and validates physics compliance (ensures negative cooling factor).
-
-simulate_future.py: Simulates the device temperature over time under sustained load to verify stability.
-
-Results
-Stability: The simulation demonstrates that under a sustained stress load (1.2x normalized load), the predicted temperature stabilizes at approximately 46°C, matching real-world hardware behavior.
-
-Accuracy: The model corrects the initial training error where the system predicted runaway heating, now accurately reflecting thermodynamic equilibrium.
-
-Requirements
-Python 3.x
-
-Pandas
-
-Scikit-Learn
-
-Android Debug Bridge (ADB) - for data collection
-
-Usage
-
-python preprocess.py
-
-python inject_physics.py
-
-python train_model.py
-
-python simulate_future.py
+# Install dependencies
+pip install numpy
+2. Run the Governor (Autonomous Mode)This starts the agent. It will begin in "Exploration" mode and gradually stabilize.Bashtsu  # Grant Root access
+python neural_governor.py
+Note: Grant the "Superuser" request on your phone screen if prompted.3. Run the Data Logger (For Benchmarking)To collect data for graphs (Time vs. Temp vs. Freq):Bashtsu
+python logger.py my_benchmark_results.csv
+📊 MethodologyThe agent operates on a 1-second control loop:SENSE: Read battery_temp from /sys/class/power_supply.LEARN: Calculate the reward for the previous action. (Did the temp spike? Did we stay cool?). Update the Q-Table.DECIDE: Select the next Gear (1-4) based on the Q-Table (Exploitation) or random chance (Exploration, $\epsilon=0.1$).ACT: Apply the Gear using the UniversalHardware interface (chmod locking).GearDescriptionCPU CeilingRefresh RateUse Case1SaverMin Freq60HzIdle / Emergency2Cruise40% Freq60HzLight Usage3Balanced70% Freq120HzSustained Gaming4TurboMax Freq120HzPeak Performance⚠️ DisclaimerRequires Root. This software modifies system-level kernel parameters. While the RL agent includes strict safety limits (>43°C Force Downshift), the author is not responsible for hardware damage or instability. Use at your own risk.🤝 ContributingThis is an active research project.Issue Tracking: Please report specific device paths that fail detection.Pull Requests: Algorithm improvements to the Reward Function are welcome.Maintained by Siva Subramanyam Ghanta
